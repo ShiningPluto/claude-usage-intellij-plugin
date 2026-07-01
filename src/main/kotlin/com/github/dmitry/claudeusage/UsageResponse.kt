@@ -9,7 +9,13 @@ data class UsageResponse(
     @SerialName("seven_day") val sevenDay: UsageQuota? = null,
     @SerialName("seven_day_sonnet") val sevenDaySonnet: UsageQuota? = null,
     @SerialName("extra_usage") val extraUsage: ExtraUsage? = null
-)
+) {
+    fun quotaForTier(tier: String): UsageQuota? = when (tier) {
+        "7-day" -> sevenDay
+        "7-day Sonnet" -> sevenDaySonnet
+        else -> fiveHour
+    }
+}
 
 @Serializable
 data class UsageQuota(

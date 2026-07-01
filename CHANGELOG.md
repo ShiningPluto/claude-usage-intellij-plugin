@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.3.1] - 2026-06-29
+
+### Added
+- Live usage popup — the refresh button shows a countdown until it can be used again, and usage rows update in place when fresh data arrives, so you can wait and refresh again without closing the popup
+- Optional IDE notification when the status bar quota crosses the yellow or red threshold (new "Show IDE notification when usage crosses a warning threshold" setting, on by default)
+- Settings button in the usage popup (next to Refresh) for quick access to plugin settings
+
+### Fixed
+- Black/empty usage popup on the macOS Metal rendering pipeline (reported on WebStorm 2026.1 / macOS 26) — the popup content now paints an explicit opaque background and forces a window repaint once shown, instead of leaving the uncleared GPU surface visible as a fully black window
+
 ## [0.3.0] - 2026-05-06
 
 ### Added

@@ -1,5 +1,7 @@
 package com.github.dmitry.claudeusage
 
+import com.intellij.notification.NotificationGroupManager
+import com.intellij.notification.NotificationType
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
@@ -37,6 +39,7 @@ class ClaudeUsageService : Disposable {
     private val cachedUsage = AtomicReference<UsageResponse?>(null)
     private val errorState = AtomicReference(UsageErrorState.NONE)
     private val lastFetchTime = AtomicReference<Instant?>(null)
+    private val previousUtilization = AtomicReference<Double?>(null)
     private val scheduler: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
     private val listeners = mutableListOf<() -> Unit>()
     @Volatile
@@ -48,6 +51,7 @@ class ClaudeUsageService : Disposable {
         private const val USER_AGENT = "claude-code/2.1.131"
         private const val MAX_BACKOFF_SECONDS = 3600L
         private const val MANUAL_REFRESH_COOLDOWN_SECONDS = 5L
+        private const val NOTIFICATION_GROUP_ID = "Claude Code Usage"
 
         private fun getRefreshIntervalSeconds(): Long =
             ClaudeUsageSettings.getInstance().state.refreshIntervalMinutes * 60L
@@ -98,6 +102,12 @@ class ClaudeUsageService : Disposable {
     fun secondsSinceLastFetch(): Long? {
         val last = lastFetchTime.get() ?: return null
         return Duration.between(last, Instant.now()).seconds
+    }
+
+    fun secondsUntilCanRefresh(): Long {
+        val last = lastFetchTime.get() ?: return 0
+        val remaining = MANUAL_REFRESH_COOLDOWN_SECONDS - Duration.between(last, Instant.now()).seconds
+        return remaining.coerceAtLeast(0)
     }
 
     fun refreshUsage() {
@@ -161,14 +171,47 @@ class ClaudeUsageService : Disposable {
     private fun handleSuccess(connection: HttpURLConnection) {
         val response = connection.inputStream.bufferedReader().readText()
         try {
-            cachedUsage.set(json.decodeFromString<UsageResponse>(response))
+            val parsed = json.decodeFromString<UsageResponse>(response)
+            cachedUsage.set(parsed)
             errorState.set(UsageErrorState.NONE)
             lastFetchTime.set(Instant.now())
             currentBackoffSeconds = getRefreshIntervalSeconds()
             LOG.info("Successfully fetched Claude usage data")
+            maybeNotifyThresholdCrossing(parsed)
         } catch (e: Exception) {
             LOG.warn("Failed to parse Claude usage response: ${e.message}")
             setError(UsageErrorState.PARSE_ERROR)
+        }
+    }
+
+    private fun maybeNotifyThresholdCrossing(usage: UsageResponse) {
+        val settings = ClaudeUsageSettings.getInstance().state
+        val tier = settings.statusBarQuotaTier
+        val current = usage.quotaForTier(tier)?.utilization
+        val previous = previousUtilization.getAndSet(current)
+
+        if (!settings.notifyOnThreshold || current == null || previous == null) return
+
+        val resetHint = usage.quotaForTier(tier)?.resetsAt
+            ?.let { " - resets in ${formatTimeUntilReset(it)}" } ?: ""
+        val percent = current.toInt()
+        when {
+            crossedUp(previous, current, settings.redThreshold) ->
+                showThresholdNotification("Claude Code usage critical", "$tier usage at $percent%$resetHint", NotificationType.WARNING)
+            crossedUp(previous, current, settings.yellowThreshold) ->
+                showThresholdNotification("Claude Code usage warning", "$tier usage at $percent%$resetHint", NotificationType.INFORMATION)
+        }
+    }
+
+    private fun crossedUp(previous: Double, current: Double, threshold: Int): Boolean =
+        previous < threshold && current >= threshold
+
+    private fun showThresholdNotification(title: String, content: String, type: NotificationType) {
+        ApplicationManager.getApplication().invokeLater {
+            NotificationGroupManager.getInstance()
+                .getNotificationGroup(NOTIFICATION_GROUP_ID)
+                .createNotification(title, content, type)
+                .notify(null)
         }
     }
 

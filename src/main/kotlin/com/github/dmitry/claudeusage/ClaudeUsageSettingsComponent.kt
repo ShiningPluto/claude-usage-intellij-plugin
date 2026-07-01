@@ -24,6 +24,9 @@ class ClaudeUsageSettingsComponent {
             "Available on macOS only"
         }
     }
+    private val notifyOnThresholdCheckBox = JBCheckBox("Show IDE notification when usage crosses a warning threshold").apply {
+        toolTipText = "Pops up a balloon when the status bar quota crosses the yellow or red threshold"
+    }
     private val resetButton = JButton("Reset to Defaults")
 
     init {
@@ -38,6 +41,7 @@ class ClaudeUsageSettingsComponent {
             .addLabeledComponent(JBLabel("Credentials file path:"), credentialsPathField, 1, false)
             .addLabeledComponent(JBLabel("Refresh interval (minutes):"), refreshIntervalField, 1, false)
             .addComponent(useMacKeychainCheckBox)
+            .addComponent(notifyOnThresholdCheckBox)
             .addSeparator()
             .addComponent(resetPanel)
             .addComponentFillVertically(JPanel(), 0)
@@ -64,6 +68,8 @@ class ClaudeUsageSettingsComponent {
 
     fun getUseMacKeychain(): Boolean = useMacKeychainCheckBox.isSelected
 
+    fun getNotifyOnThreshold(): Boolean = notifyOnThresholdCheckBox.isSelected
+
     fun setQuotaTier(tier: String) {
         quotaTierComboBox.selectedItem = tier
     }
@@ -88,6 +94,10 @@ class ClaudeUsageSettingsComponent {
         useMacKeychainCheckBox.isSelected = value
     }
 
+    fun setNotifyOnThreshold(value: Boolean) {
+        notifyOnThresholdCheckBox.isSelected = value
+    }
+
     private fun resetToDefaults() {
         setQuotaTier(ClaudeUsageSettings.DEFAULT_QUOTA_TIER)
         setYellowThreshold(ClaudeUsageSettings.DEFAULT_YELLOW_THRESHOLD)
@@ -95,5 +105,6 @@ class ClaudeUsageSettingsComponent {
         setCredentialsPath(ClaudeUsageSettings.DEFAULT_CREDENTIALS_PATH)
         setRefreshIntervalMinutes(ClaudeUsageSettings.DEFAULT_REFRESH_INTERVAL_MINUTES)
         setUseMacKeychain(ClaudeUsageSettings.DEFAULT_USE_MAC_KEYCHAIN)
+        setNotifyOnThreshold(ClaudeUsageSettings.DEFAULT_NOTIFY_ON_THRESHOLD)
     }
 }

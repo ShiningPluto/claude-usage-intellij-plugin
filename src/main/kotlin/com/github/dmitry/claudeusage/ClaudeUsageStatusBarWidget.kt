@@ -2,8 +2,12 @@ package com.github.dmitry.claudeusage
 
 import com.intellij.icons.AllIcons
 import com.intellij.ide.BrowserUtil
+import com.intellij.openapi.options.ShowSettingsUtil
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.ui.popup.JBPopup
 import com.intellij.openapi.ui.popup.JBPopupFactory
+import com.intellij.openapi.ui.popup.JBPopupListener
+import com.intellij.openapi.ui.popup.LightweightWindowEvent
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.wm.CustomStatusBarWidget
 import com.intellij.openapi.wm.StatusBar
@@ -28,7 +32,7 @@ class ClaudeUsageStatusBarWidgetFactory : StatusBarWidgetFactory {
 
     override fun isAvailable(project: Project): Boolean = true
 
-    override fun createWidget(project: Project): StatusBarWidget = ClaudeUsageStatusBarWidget()
+    override fun createWidget(project: Project): StatusBarWidget = ClaudeUsageStatusBarWidget(project)
 
     override fun disposeWidget(widget: StatusBarWidget) {
         Disposer.dispose(widget)
@@ -37,7 +41,7 @@ class ClaudeUsageStatusBarWidgetFactory : StatusBarWidgetFactory {
     override fun canBeEnabledOn(statusBar: StatusBar): Boolean = true
 }
 
-class ClaudeUsageStatusBarWidget : CustomStatusBarWidget {
+class ClaudeUsageStatusBarWidget(private val project: Project) : CustomStatusBarWidget {
     private var statusBar: StatusBar? = null
     private val service = ClaudeUsageService.getInstance()
     private val widgetComponent: UsageWidgetComponent = UsageWidgetComponent()
@@ -74,7 +78,9 @@ class ClaudeUsageStatusBarWidget : CustomStatusBarWidget {
         service.addListener(listener!!)
         widgetComponent.addMouseListener(object : MouseAdapter() {
             override fun mouseClicked(e: MouseEvent) {
-                showDetailedPopup(widgetComponent)
+                if (SwingUtilities.isLeftMouseButton(e)) {
+                    showDetailedPopup(widgetComponent)
+                }
             }
         })
         widgetComponent.updateUsage()
@@ -97,7 +103,7 @@ class ClaudeUsageStatusBarWidget : CustomStatusBarWidget {
 
     private fun getSelectedQuota(usage: UsageResponse): UsageQuota? {
         val tier = ClaudeUsageSettings.getInstance().state.statusBarQuotaTier
-        return QUOTA_TIERS.firstOrNull { it.first == tier }?.second?.invoke(usage) ?: usage.fiveHour
+        return usage.quotaForTier(tier)
     }
 
     inner class UsageWidgetComponent : JPanel() {
@@ -182,13 +188,138 @@ class ClaudeUsageStatusBarWidget : CustomStatusBarWidget {
     }
 
     private fun showDetailedPopup(component: Component) {
+        // Root paints an explicit opaque background: on the macOS Metal rendering pipeline a
+        // popup whose content does not paint a solid background can show the uncleared GPU
+        // surface as a fully black window (reported on WebStorm 2026.1 / macOS 26).
+        val root = JPanel(BorderLayout()).apply {
+            border = JBUI.Borders.empty(12)
+            isOpaque = true
+            background = UIUtil.getPanelBackground()
+        }
+
+        val body = JPanel().apply {
+            layout = BoxLayout(this, BoxLayout.Y_AXIS)
+            isOpaque = false
+        }
+
+        val lastFetchLabel = JBLabel().apply {
+            font = font.deriveFont(font.size - 1f)
+            foreground = UIUtil.getContextHelpForeground()
+        }
+
+        val refreshButton = JButton(AllIcons.Actions.Refresh).apply {
+            isBorderPainted = false
+            isContentAreaFilled = false
+            preferredSize = Dimension(20, 20)
+        }
+
+        val settingsButton = JButton(AllIcons.General.Settings).apply {
+            isBorderPainted = false
+            isContentAreaFilled = false
+            preferredSize = Dimension(20, 20)
+            toolTipText = "Settings"
+            cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
+            addActionListener { openSettings() }
+        }
+
+        val rightPanel = JPanel(FlowLayout(FlowLayout.RIGHT, 4, 0)).apply { isOpaque = false }
+        rightPanel.add(lastFetchLabel)
+        rightPanel.add(settingsButton)
+        rightPanel.add(refreshButton)
+
+        val bottomPanel = JPanel(BorderLayout()).apply { isOpaque = false }
+        bottomPanel.add(createLinkLabel(), BorderLayout.WEST)
+        bottomPanel.add(rightPanel, BorderLayout.EAST)
+
+        root.add(body, BorderLayout.CENTER)
+        root.add(bottomPanel, BorderLayout.SOUTH)
+
+        lateinit var popup: JBPopup
+
+        fun updateControls() {
+            lastFetchLabel.text = service.getLastFetchTime()?.let {
+                DateTimeFormatter.ofPattern("HH:mm:ss").withZone(ZoneId.systemDefault()).format(it)
+            } ?: ""
+            if (service.canRefresh()) {
+                refreshButton.isEnabled = true
+                refreshButton.toolTipText = "Refresh usage data"
+                refreshButton.cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
+            } else {
+                refreshButton.isEnabled = false
+                refreshButton.toolTipText = "Refresh available in ${service.secondsUntilCanRefresh()}s"
+                refreshButton.cursor = Cursor.getDefaultCursor()
+            }
+        }
+
+        fun rebuildBody() {
+            body.removeAll()
+            fillBody(body)
+            body.revalidate()
+            body.repaint()
+        }
+
+        refreshButton.addActionListener {
+            if (!service.canRefresh()) return@addActionListener
+            updateControls()
+            Thread { service.refreshUsage() }.start()
+        }
+
+        // Keep the popup live: the timer ticks the refresh cooldown countdown every second,
+        // and the service listener rebuilds usage rows whenever fresh data arrives, so the
+        // user can wait and refresh again without closing the popup.
+        val timer = Timer(1000) { updateControls() }
+        timer.isRepeats = true
+
+        val serviceListener: () -> Unit = {
+            rebuildBody()
+            updateControls()
+            if (!popup.isDisposed) {
+                SwingUtilities.invokeLater { popup.pack(true, true) }
+            }
+        }
+
+        rebuildBody()
+        updateControls()
+
+        popup = JBPopupFactory.getInstance()
+            .createComponentPopupBuilder(root, refreshButton)
+            .setTitle("Claude Code Usage")
+            .setFocusable(true)
+            .setRequestFocus(true)
+            .setMovable(true)
+            .setCancelOnClickOutside(true)
+            .setCancelButton(com.intellij.openapi.ui.popup.IconButton("Close", AllIcons.Actions.Close))
+            .createPopup()
+
+        popup.addListener(object : JBPopupListener {
+            override fun onClosed(event: LightweightWindowEvent) {
+                timer.stop()
+                service.removeListener(serviceListener)
+            }
+        })
+
+        service.addListener(serviceListener)
+        timer.start()
+
+        popup.showUnderneathOf(component)
+
+        // Metal workaround: force a repaint of the popup window once it is shown so the
+        // GPU surface is actually painted instead of staying black on macOS Metal.
+        SwingUtilities.invokeLater {
+            val window = SwingUtilities.getWindowAncestor(root)
+            if (window != null) {
+                window.validate()
+                window.repaint()
+            } else {
+                root.revalidate()
+                root.repaint()
+            }
+        }
+    }
+
+    private fun fillBody(panel: JPanel) {
         val usage = service.getUsage()
         val error = service.getError()
-
-        val panel = JPanel().apply {
-            layout = BoxLayout(this, BoxLayout.Y_AXIS)
-            border = JBUI.Borders.empty(12)
-        }
 
         if (usage == null) {
             val errorMessage = if (error != UsageErrorState.NONE) error.message else "Loading usage data..."
@@ -226,62 +357,10 @@ class ClaudeUsageStatusBarWidget : CustomStatusBarWidget {
         }
 
         panel.add(Box.createVerticalStrut(4))
+    }
 
-        val bottomPanel = JPanel(BorderLayout()).apply {
-            alignmentX = Component.LEFT_ALIGNMENT
-            isOpaque = false
-        }
-
-        bottomPanel.add(createLinkLabel(), BorderLayout.WEST)
-
-        val rightPanel = JPanel(FlowLayout(FlowLayout.RIGHT, 4, 0)).apply { isOpaque = false }
-
-        service.getLastFetchTime()?.let { lastFetch ->
-            val formatter = DateTimeFormatter.ofPattern("HH:mm:ss").withZone(ZoneId.systemDefault())
-            rightPanel.add(JBLabel(formatter.format(lastFetch)).apply {
-                font = font.deriveFont(font.size - 1f)
-                foreground = UIUtil.getContextHelpForeground()
-            })
-        }
-
-        val refreshButton = JButton(AllIcons.Actions.Refresh).apply {
-            isBorderPainted = false
-            isContentAreaFilled = false
-            preferredSize = Dimension(20, 20)
-            if (service.canRefresh()) {
-                toolTipText = "Refresh usage data"
-                cursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
-            } else {
-                toolTipText = "Refreshed ${service.secondsSinceLastFetch()}s ago"
-                isEnabled = false
-            }
-        }
-        rightPanel.add(refreshButton)
-
-        bottomPanel.add(rightPanel, BorderLayout.EAST)
-        panel.add(bottomPanel)
-
-        val popup = JBPopupFactory.getInstance()
-            .createComponentPopupBuilder(panel, null)
-            .setTitle("Claude Code Usage")
-            .setFocusable(true)
-            .setRequestFocus(true)
-            .setMovable(true)
-            .setCancelOnClickOutside(true)
-            .setCancelButton(com.intellij.openapi.ui.popup.IconButton("Close", AllIcons.Actions.Close))
-            .createPopup()
-
-        refreshButton.addActionListener {
-            Thread {
-                service.refreshUsage()
-                SwingUtilities.invokeLater {
-                    popup.cancel()
-                    showDetailedPopup(component)
-                }
-            }.start()
-        }
-
-        popup.showUnderneathOf(component)
+    private fun openSettings() {
+        ShowSettingsUtil.getInstance().showSettingsDialog(project, ClaudeUsageSettingsConfigurable::class.java)
     }
 
     private fun createUsageRow(label: String, percentage: Int, resetIn: String?): JPanel {

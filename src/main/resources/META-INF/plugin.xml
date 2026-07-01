@@ -27,6 +27,13 @@
     ]]></description>
 
     <change-notes><![CDATA[
+    <b>0.3.1</b>
+    <ul>
+        <li>Live usage popup: the refresh button now shows a countdown until it is available again, and usage values update in place without closing/reopening the popup</li>
+        <li>Optional IDE notification when the status bar quota crosses the yellow or red threshold (configurable in settings, on by default)</li>
+        <li>Settings button added to the usage popup, next to Refresh, for quick access to plugin settings</li>
+        <li>Fixed black/empty usage popup on the macOS Metal rendering pipeline (reported on WebStorm 2026.1 / macOS 26): the popup content now paints an explicit opaque background and forces a repaint once shown</li>
+    </ul>
     <b>0.3.0</b>
     <ul>
         <li>macOS Keychain support: reads OAuth tokens from the Keychain (where Claude Code now stores them), with fallback to the credentials file</li>
@@ -80,6 +87,10 @@
                 instance="com.github.dmitry.claudeusage.ClaudeUsageSettingsConfigurable"
                 id="com.github.dmitry.claudeusage.ClaudeUsageSettingsConfigurable"
                 displayName="Claude Code Usage"/>
+
+        <notificationGroup
+                id="Claude Code Usage"
+                displayType="BALLOON"/>
     </extensions>
 
 </idea-plugin>

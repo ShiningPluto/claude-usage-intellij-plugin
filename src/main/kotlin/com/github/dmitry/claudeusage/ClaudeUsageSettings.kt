@@ -19,7 +19,8 @@ class ClaudeUsageSettings : PersistentStateComponent<ClaudeUsageSettings.State> 
         var redThreshold: Int = DEFAULT_RED_THRESHOLD,
         var credentialsFilePath: String = DEFAULT_CREDENTIALS_PATH,
         var refreshIntervalMinutes: Int = DEFAULT_REFRESH_INTERVAL_MINUTES,
-        var useMacKeychain: Boolean = DEFAULT_USE_MAC_KEYCHAIN
+        var useMacKeychain: Boolean = DEFAULT_USE_MAC_KEYCHAIN,
+        var notifyOnThreshold: Boolean = DEFAULT_NOTIFY_ON_THRESHOLD
     )
 
     private var myState = State()
@@ -37,6 +38,7 @@ class ClaudeUsageSettings : PersistentStateComponent<ClaudeUsageSettings.State> 
         const val DEFAULT_CREDENTIALS_PATH = "~/.claude/.credentials.json"
         const val DEFAULT_REFRESH_INTERVAL_MINUTES = 1
         const val DEFAULT_USE_MAC_KEYCHAIN = true
+        const val DEFAULT_NOTIFY_ON_THRESHOLD = true
 
         val QUOTA_TIER_OPTIONS = arrayOf("5-hour", "7-day", "7-day Sonnet")
 
