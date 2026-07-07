@@ -26,7 +26,8 @@ class ClaudeUsageSettingsConfigurable : Configurable {
             component.getCredentialsPath() != state.credentialsFilePath ||
             component.getRefreshIntervalMinutes() != state.refreshIntervalMinutes ||
             component.getUseMacKeychain() != state.useMacKeychain ||
-            component.getNotifyOnThreshold() != state.notifyOnThreshold
+            component.getNotifyOnThreshold() != state.notifyOnThreshold ||
+            component.getProxyUrl() != state.proxyUrl
     }
 
     override fun apply() {
@@ -39,6 +40,7 @@ class ClaudeUsageSettingsConfigurable : Configurable {
         state.refreshIntervalMinutes = component.getRefreshIntervalMinutes()
         state.useMacKeychain = component.getUseMacKeychain()
         state.notifyOnThreshold = component.getNotifyOnThreshold()
+        state.proxyUrl = component.getProxyUrl()
     }
 
     override fun reset() {
@@ -51,6 +53,8 @@ class ClaudeUsageSettingsConfigurable : Configurable {
         component.setRefreshIntervalMinutes(state.refreshIntervalMinutes)
         component.setUseMacKeychain(state.useMacKeychain)
         component.setNotifyOnThreshold(state.notifyOnThreshold)
+        component.setProxyUrl(state.proxyUrl)
+        component.refreshProxyDetectedLabel()
     }
 
     override fun disposeUIResources() {

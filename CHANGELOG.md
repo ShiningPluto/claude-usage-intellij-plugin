@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.3.2] - 2026-07-07
+
+### Added
+- Proxy support for the usage API request — auto-detects `HTTPS_PROXY`/`HTTP_PROXY` from `~/.claude/settings.json` (the `env` block Claude Code CLI reads), falling back to the `HTTPS_PROXY`/`HTTP_PROXY` environment variables
+- New "Proxy URL" setting to override the auto-detected proxy (supports `http://user:pass@host:port` for authenticated proxies); leave empty to keep auto-detecting
+
 ## [0.3.1] - 2026-06-29
 
 ### Added
