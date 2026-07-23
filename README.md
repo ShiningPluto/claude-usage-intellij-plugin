@@ -16,13 +16,15 @@ A simple IntelliJ plugin that displays your Claude subscription usage in the IDE
 - Time until quota reset
 - Detailed popup with all usage tiers (5-hour, 7-day, 7-day Sonnet, extra usage)
 - Dark and light theme support
-- Error state display with actionable hints (missing credentials, auth expired, network issues)
+- Error state display with actionable hints (missing credentials, auth expired, network/proxy issues)
 - Last fetch timestamp in the popup
+- Works behind a corporate proxy (auto-detected, see [Proxy support](#proxy-support))
 - Configurable settings (Settings → Tools → Claude Code Usage):
   - Status bar quota display (5-hour, 7-day, or 7-day Sonnet)
   - Auto-refresh interval (1–60 minutes, default 1)
   - Warning color thresholds (yellow/red)
   - Custom credentials file path
+  - Proxy URL override
   - Reset to defaults button
 - Direct link to Claude settings
 
@@ -41,6 +43,27 @@ The plugin reads credentials from:
 The credentials path and the macOS Keychain toggle are both configurable in **Settings -> Tools -> Claude Code Usage**.
 
 > **Note (SSH):** the macOS Keychain is locked over SSH — same limitation as the official CLI. Either run `security unlock-keychain` first or fall back to the file path.
+
+## Proxy support
+
+The plugin makes a single HTTPS request to `api.anthropic.com`. Behind a corporate proxy it picks up the proxy automatically, in this order:
+
+1. **Proxy URL** in **Settings → Tools → Claude Code Usage** (manual override)
+2. `HTTPS_PROXY` / `HTTP_PROXY` in the `env` block of `~/.claude/settings.json` — the same block the Claude Code CLI reads:
+   ```json
+   { "env": { "HTTPS_PROXY": "http://proxy.corp:3128" } }
+   ```
+3. The `HTTPS_PROXY` / `HTTP_PROXY` environment variables of the IDE process
+
+The settings panel shows which proxy was auto-detected. Supported formats:
+
+- `http://proxy.corp:3128` (or bare `proxy.corp:3128`, port defaults to 80)
+- `http://user:pass@proxy.corp:3128` for proxies requiring basic authentication
+- `socks5://proxy.corp:1080` for SOCKS proxies (credentials in SOCKS URLs are ignored — the JDK does not support them per connection)
+
+If the proxy rejects the request or cannot be reached, the widget shows **Claude: proxy err** with a hint in the popup instead of a generic offline state.
+
+> **Note:** for authenticated proxies the JDK disables basic authentication over HTTPS `CONNECT` tunnels by default. JetBrains IDEs ship with this restriction lifted; on a custom JVM add `-Djdk.http.auth.tunneling.disabledSchemes=""` to your IDE's VM options if the proxy returns 407.
 
 ## Development
 

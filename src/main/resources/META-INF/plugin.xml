@@ -31,6 +31,8 @@
     <b>0.3.2</b>
     <ul>
         <li>Proxy support for the usage API request: auto-detects HTTPS_PROXY/HTTP_PROXY from ~/.claude/settings.json (falling back to the environment variables), with a new "Proxy URL" setting to override it manually (supports http://user:pass@host:port)</li>
+        <li>SOCKS proxy URLs (socks://, socks4://, socks5://) are recognised as SOCKS proxies instead of being treated as HTTP proxies</li>
+        <li>New proxy error state: HTTP 407, a failed CONNECT tunnel or an unreachable proxy is now reported as a proxy problem with an actionable hint, instead of a generic "offline"</li>
     </ul>
     <b>0.3.1</b>
     <ul>

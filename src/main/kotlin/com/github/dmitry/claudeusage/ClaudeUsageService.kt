@@ -8,9 +8,11 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.Logger
 import kotlinx.serialization.json.Json
 import java.net.Authenticator
+import java.net.ConnectException
 import java.net.HttpURLConnection
 import java.net.PasswordAuthentication
 import java.net.URI
+import java.net.UnknownHostException
 import java.time.Duration
 import java.time.Instant
 import java.time.ZonedDateTime
@@ -27,6 +29,7 @@ enum class UsageErrorState(val message: String) {
     AUTH_FAILED("Authentication failed - token may be expired. Run 'claude' to re-authenticate"),
     HTTP_ERROR("Server returned an error"),
     NETWORK_ERROR("Network error - check your internet connection"),
+    PROXY_ERROR("Proxy error - check the Proxy URL in Settings > Tools > Claude Code Usage"),
     RATE_LIMITED("Rate limited - will retry shortly"),
     PARSE_ERROR("Failed to parse API response"),
     KEYCHAIN_DENIED("Keychain access denied - open Keychain Access, find 'Claude Code-credentials', and click Always Allow for your IDE"),
@@ -46,6 +49,8 @@ class ClaudeUsageService : Disposable {
     private val listeners = mutableListOf<() -> Unit>()
     @Volatile
     private var currentBackoffSeconds = getRefreshIntervalSeconds()
+    @Volatile
+    private var usingProxy = false
 
     companion object {
         private const val USAGE_API_URL = "https://api.anthropic.com/api/oauth/usage"
@@ -130,7 +135,7 @@ class ClaudeUsageService : Disposable {
             fetchFromApi(accessToken)
         } catch (e: Exception) {
             LOG.warn("Error fetching Claude usage: ${e.message}")
-            setError(UsageErrorState.NETWORK_ERROR)
+            setError(classifyFetchError(e))
         }
 
         notifyListeners()
@@ -139,6 +144,7 @@ class ClaudeUsageService : Disposable {
     private fun fetchFromApi(accessToken: String) {
         val url = URI(USAGE_API_URL).toURL()
         val resolvedProxy = ClaudeProxyResolver.resolve()
+        usingProxy = resolvedProxy != null
         val connection = (resolvedProxy?.let { url.openConnection(it.proxy) } ?: url.openConnection()) as HttpURLConnection
         connection.requestMethod = "GET"
         connection.setRequestProperty("Authorization", "Bearer $accessToken")
@@ -148,26 +154,36 @@ class ClaudeUsageService : Disposable {
         connection.connectTimeout = 10000
         connection.readTimeout = 10000
 
-        val previousAuthenticator = resolvedProxy?.username?.let { installProxyAuthenticator(resolvedProxy) }
+        resolvedProxy?.let { applyProxyAuthentication(connection, it) }
+
         try {
             handleResponse(connection)
         } finally {
             connection.disconnect()
-            if (resolvedProxy?.username != null) Authenticator.setDefault(previousAuthenticator)
         }
     }
 
-    private fun installProxyAuthenticator(resolvedProxy: ResolvedProxy): Authenticator? {
-        val previous = Authenticator.getDefault()
-        Authenticator.setDefault(object : Authenticator() {
-            override fun getPasswordAuthentication(): PasswordAuthentication? {
-                if (requestorType == RequestorType.PROXY) {
-                    return PasswordAuthentication(resolvedProxy.username, (resolvedProxy.password ?: "").toCharArray())
-                }
-                return super.getPasswordAuthentication()
-            }
-        })
-        return previous
+    private fun applyProxyAuthentication(connection: HttpURLConnection, resolvedProxy: ResolvedProxy) {
+        val username = resolvedProxy.username ?: return
+        val password = resolvedProxy.password ?: ""
+        try {
+            connection.setAuthenticator(object : Authenticator() {
+                override fun getPasswordAuthentication(): PasswordAuthentication? =
+                    if (requestorType == RequestorType.PROXY) {
+                        PasswordAuthentication(username, password.toCharArray())
+                    } else {
+                        null
+                    }
+            })
+        } catch (e: UnsupportedOperationException) {
+            LOG.warn("Proxy authentication is not supported by this connection: ${e.message}")
+        }
+    }
+
+    private fun classifyFetchError(e: Exception): UsageErrorState {
+        val tunnelingFailed = e.message?.contains("Unable to tunnel through proxy", ignoreCase = true) == true
+        val proxyUnreachable = usingProxy && (e is ConnectException || e is UnknownHostException)
+        return if (tunnelingFailed || proxyUnreachable) UsageErrorState.PROXY_ERROR else UsageErrorState.NETWORK_ERROR
     }
 
     private fun handleResponse(connection: HttpURLConnection) {
@@ -180,6 +196,7 @@ class ClaudeUsageService : Disposable {
 
         val error = when {
             responseCode == HttpURLConnection.HTTP_UNAUTHORIZED || responseCode == HttpURLConnection.HTTP_FORBIDDEN -> UsageErrorState.AUTH_FAILED
+            responseCode == HttpURLConnection.HTTP_PROXY_AUTH -> UsageErrorState.PROXY_ERROR
             responseCode == 429 -> UsageErrorState.RATE_LIMITED
             else -> UsageErrorState.HTTP_ERROR
         }

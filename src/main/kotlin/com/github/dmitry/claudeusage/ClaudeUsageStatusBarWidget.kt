@@ -176,6 +176,7 @@ class ClaudeUsageStatusBarWidget(private val project: Project) : CustomStatusBar
                 UsageErrorState.NO_CREDENTIALS -> "Claude: no creds"
                 UsageErrorState.AUTH_FAILED -> "Claude: auth err"
                 UsageErrorState.NETWORK_ERROR -> "Claude: offline"
+                UsageErrorState.PROXY_ERROR -> "Claude: proxy err"
                 UsageErrorState.RATE_LIMITED -> "Claude: rate limited"
                 UsageErrorState.HTTP_ERROR, UsageErrorState.PARSE_ERROR -> "Claude: error"
                 UsageErrorState.NO_ACCESS_TOKEN -> "Claude: no token"
@@ -337,6 +338,10 @@ class ClaudeUsageStatusBarWidget(private val project: Project) : CustomStatusBar
                 }
                 UsageErrorState.KEYCHAIN_TIMEOUT ->
                     panel.add(createHintLabel("Approve the macOS Keychain dialog, then click Refresh."))
+                UsageErrorState.PROXY_ERROR -> {
+                    panel.add(createHintLabel("The proxy refused or could not reach api.anthropic.com."))
+                    panel.add(createHintLabel("Check the Proxy URL setting or HTTPS_PROXY in ~/.claude/settings.json."))
+                }
                 else -> { /* no extra hint */ }
             }
         } else {
