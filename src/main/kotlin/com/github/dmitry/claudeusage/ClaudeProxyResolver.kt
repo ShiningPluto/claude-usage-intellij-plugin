@@ -18,10 +18,22 @@ object ClaudeProxyResolver {
     private val json = Json { ignoreUnknownKeys = true }
     private val PROXY_ENV_KEYS = listOf("HTTPS_PROXY", "https_proxy", "HTTP_PROXY", "http_proxy")
     private val SOCKS_SCHEMES = setOf("socks", "socks4", "socks5")
+    private val DIRECT_KEYWORDS = setOf("none", "direct", "off")
     private const val DEFAULT_HTTP_PROXY_PORT = 80
     private const val DEFAULT_SOCKS_PORT = 1080
 
-    fun resolve(): ResolvedProxy? = effectiveProxyUrl()?.let { parse(it) }
+    fun resolve(): ResolvedProxy? {
+        val url = effectiveProxyUrl() ?: return null
+        if (isDirect(url)) return null
+        return parse(url)
+    }
+
+    fun isValidProxyUrl(raw: String): Boolean {
+        val value = raw.trim()
+        return value.isEmpty() || isDirect(value) || parse(value) != null
+    }
+
+    private fun isDirect(url: String): Boolean = url.trim().lowercase() in DIRECT_KEYWORDS
 
     fun autoDetectedProxyUrl(): String? {
         readFromClaudeSettingsFile()?.let { return it }

@@ -29,7 +29,8 @@ class ClaudeUsageSettingsComponent {
         toolTipText = "Pops up a balloon when the status bar quota crosses the yellow or red threshold"
     }
     private val proxyUrlField = JBTextField().apply {
-        toolTipText = "e.g. http://user:pass@proxyhost:3128. Leave empty to auto-detect."
+        toolTipText = "e.g. http://user:pass@proxyhost:3128 or socks5://proxyhost:1080. " +
+            "Leave empty to auto-detect, or type 'none' to always connect directly."
     }
     private val proxyDetectedLabel = JBLabel().apply {
         foreground = JBColor.GRAY
@@ -49,7 +50,7 @@ class ClaudeUsageSettingsComponent {
             .addLabeledComponent(JBLabel("Refresh interval (minutes):"), refreshIntervalField, 1, false)
             .addComponent(useMacKeychainCheckBox)
             .addComponent(notifyOnThresholdCheckBox)
-            .addLabeledComponent(JBLabel("Proxy URL (leave empty to auto-detect):"), proxyUrlField, 1, false)
+            .addLabeledComponent(JBLabel("Proxy URL (empty = auto-detect, 'none' = direct):"), proxyUrlField, 1, false)
             .addComponent(proxyDetectedLabel)
             .addSeparator()
             .addComponent(resetPanel)

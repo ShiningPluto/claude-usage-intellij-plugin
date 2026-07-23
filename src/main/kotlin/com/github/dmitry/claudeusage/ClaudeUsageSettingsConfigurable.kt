@@ -1,6 +1,7 @@
 package com.github.dmitry.claudeusage
 
 import com.intellij.openapi.options.Configurable
+import com.intellij.openapi.options.ConfigurationException
 import javax.swing.JComponent
 
 class ClaudeUsageSettingsConfigurable : Configurable {
@@ -33,6 +34,14 @@ class ClaudeUsageSettingsConfigurable : Configurable {
     override fun apply() {
         val state = ClaudeUsageSettings.getInstance().state
         val component = settingsComponent ?: return
+
+        val proxyUrl = component.getProxyUrl().trim()
+        if (!ClaudeProxyResolver.isValidProxyUrl(proxyUrl)) {
+            throw ConfigurationException(
+                "Invalid proxy URL. Expected host:port, http://host:port, socks5://host:port, or 'none' to disable."
+            )
+        }
+
         state.statusBarQuotaTier = component.getQuotaTier()
         state.yellowThreshold = component.getYellowThreshold()
         state.redThreshold = component.getRedThreshold()
@@ -40,7 +49,7 @@ class ClaudeUsageSettingsConfigurable : Configurable {
         state.refreshIntervalMinutes = component.getRefreshIntervalMinutes()
         state.useMacKeychain = component.getUseMacKeychain()
         state.notifyOnThreshold = component.getNotifyOnThreshold()
-        state.proxyUrl = component.getProxyUrl()
+        state.proxyUrl = proxyUrl
     }
 
     override fun reset() {

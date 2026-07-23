@@ -6,7 +6,9 @@
 - Proxy support for the usage API request — auto-detects `HTTPS_PROXY`/`HTTP_PROXY` from `~/.claude/settings.json` (the `env` block Claude Code CLI reads), falling back to the `HTTPS_PROXY`/`HTTP_PROXY` environment variables (thanks [@zeroday98](https://github.com/zeroday98), [#4](https://github.com/dmitry/claude-usage-intellij-plugin/pull/4))
 - New "Proxy URL" setting to override the auto-detected proxy (supports `http://user:pass@host:port` for authenticated proxies); leave empty to keep auto-detecting, and the settings panel shows which proxy was detected
 - `socks://`, `socks4://` and `socks5://` proxy URLs are recognised as SOCKS proxies (default port 1080) instead of being treated as HTTP proxies
-- Dedicated "proxy error" state — HTTP 407, a failed CONNECT tunnel or an unreachable proxy host is now reported as a proxy problem with a hint in the popup, instead of a generic "offline"
+- Dedicated "proxy error" state — HTTP 407, a failed CONNECT tunnel or an unreachable proxy host is now reported as a proxy problem with a hint in the popup
+- `none` (or `direct`) as the Proxy URL disables auto-detection and forces a direct connection even when `HTTPS_PROXY` is set
+- The Proxy URL is validated when settings are applied, so a malformed value is rejected instead of silently falling back to a direct connection, instead of a generic "offline"
 
 ### Changed
 - Proxy credentials are applied per connection instead of replacing the JVM-wide default `Authenticator`, so the plugin no longer interferes with other IDE network requests while a refresh is in flight

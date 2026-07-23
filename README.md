@@ -60,6 +60,9 @@ The settings panel shows which proxy was auto-detected. Supported formats:
 - `http://proxy.corp:3128` (or bare `proxy.corp:3128`, port defaults to 80)
 - `http://user:pass@proxy.corp:3128` for proxies requiring basic authentication
 - `socks5://proxy.corp:1080` for SOCKS proxies (credentials in SOCKS URLs are ignored — the JDK does not support them per connection)
+- `none` (or `direct`) to skip auto-detection entirely and always connect directly, even when `HTTPS_PROXY` is set
+
+An unparseable Proxy URL is rejected when you apply the settings, so a typo can never silently downgrade the plugin to a direct connection. The proxy is resolved per request, so changes take effect on the next refresh without restarting the IDE.
 
 If the proxy rejects the request or cannot be reached, the widget shows **Claude: proxy err** with a hint in the popup instead of a generic offline state.
 
