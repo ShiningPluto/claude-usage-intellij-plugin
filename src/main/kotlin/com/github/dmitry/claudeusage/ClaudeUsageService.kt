@@ -7,7 +7,9 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.Logger
 import kotlinx.serialization.json.Json
+import java.net.Authenticator
 import java.net.HttpURLConnection
+import java.net.PasswordAuthentication
 import java.net.URI
 import java.time.Duration
 import java.time.Instant
@@ -135,7 +137,9 @@ class ClaudeUsageService : Disposable {
     }
 
     private fun fetchFromApi(accessToken: String) {
-        val connection = URI(USAGE_API_URL).toURL().openConnection() as HttpURLConnection
+        val url = URI(USAGE_API_URL).toURL()
+        val resolvedProxy = ClaudeProxyResolver.resolve()
+        val connection = (resolvedProxy?.let { url.openConnection(it.proxy) } ?: url.openConnection()) as HttpURLConnection
         connection.requestMethod = "GET"
         connection.setRequestProperty("Authorization", "Bearer $accessToken")
         connection.setRequestProperty("anthropic-beta", ANTHROPIC_BETA)
@@ -144,11 +148,26 @@ class ClaudeUsageService : Disposable {
         connection.connectTimeout = 10000
         connection.readTimeout = 10000
 
+        val previousAuthenticator = resolvedProxy?.username?.let { installProxyAuthenticator(resolvedProxy) }
         try {
             handleResponse(connection)
         } finally {
             connection.disconnect()
+            if (resolvedProxy?.username != null) Authenticator.setDefault(previousAuthenticator)
         }
+    }
+
+    private fun installProxyAuthenticator(resolvedProxy: ResolvedProxy): Authenticator? {
+        val previous = Authenticator.getDefault()
+        Authenticator.setDefault(object : Authenticator() {
+            override fun getPasswordAuthentication(): PasswordAuthentication? {
+                if (requestorType == RequestorType.PROXY) {
+                    return PasswordAuthentication(resolvedProxy.username, (resolvedProxy.password ?: "").toCharArray())
+                }
+                return super.getPasswordAuthentication()
+            }
+        })
+        return previous
     }
 
     private fun handleResponse(connection: HttpURLConnection) {

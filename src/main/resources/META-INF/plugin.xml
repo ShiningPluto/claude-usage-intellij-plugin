@@ -18,6 +18,7 @@
         <li>Time until quota reset</li>
         <li>Detailed popup with all usage tiers (5-hour, 7-day, 7-day Sonnet, extra usage)</li>
         <li>Configurable settings (Settings → Tools → Claude Code Usage)</li>
+        <li>Works behind corporate proxies: auto-detects HTTPS_PROXY/HTTP_PROXY from ~/.claude/settings.json or the environment, with an option to override</li>
         <li>Dark and light theme support</li>
         <li>Error state display with actionable hints</li>
         <li>Direct link to Claude settings</li>
@@ -27,6 +28,10 @@
     ]]></description>
 
     <change-notes><![CDATA[
+    <b>0.3.2</b>
+    <ul>
+        <li>Proxy support for the usage API request: auto-detects HTTPS_PROXY/HTTP_PROXY from ~/.claude/settings.json (falling back to the environment variables), with a new "Proxy URL" setting to override it manually (supports http://user:pass@host:port)</li>
+    </ul>
     <b>0.3.1</b>
     <ul>
         <li>Live usage popup: the refresh button now shows a countdown until it is available again, and usage values update in place without closing/reopening the popup</li>

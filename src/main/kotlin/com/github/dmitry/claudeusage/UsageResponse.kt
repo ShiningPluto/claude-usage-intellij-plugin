@@ -44,3 +44,8 @@ data class OAuthCredentials(
     val subscriptionType: String? = null,
     val rateLimitTier: String? = null
 )
+
+@Serializable
+data class ClaudeSettingsFile(
+    val env: Map<String, String>? = null
+)
