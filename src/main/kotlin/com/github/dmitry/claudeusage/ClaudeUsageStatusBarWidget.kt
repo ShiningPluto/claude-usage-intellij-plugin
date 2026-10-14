@@ -14,6 +14,7 @@ import com.intellij.openapi.wm.StatusBar
 import com.intellij.openapi.wm.StatusBarWidget
 import com.intellij.openapi.wm.StatusBarWidgetFactory
 import com.intellij.ui.JBColor
+import com.intellij.ui.awt.RelativePoint
 import com.intellij.ui.components.JBLabel
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
@@ -195,10 +196,12 @@ class ClaudeUsageStatusBarWidget(private val project: Project) : CustomStatusBar
         // Root paints an explicit opaque background: on the macOS Metal rendering pipeline a
         // popup whose content does not paint a solid background can show the uncleared GPU
         // surface as a fully black window (reported on WebStorm 2026.1 / macOS 26).
+        // The popup background is the one list popups use (e.g. the line separator widget), so the
+        // title header and the body share a color the way they do there.
         val root = JPanel(BorderLayout()).apply {
-            border = JBUI.Borders.empty(12)
+            border = JBUI.Borders.empty(4, 12, 12, 12)
             isOpaque = true
-            background = UIUtil.getPanelBackground()
+            background = JBUI.CurrentTheme.Popup.BACKGROUND
         }
 
         val body = JPanel().apply {
@@ -304,7 +307,6 @@ class ClaudeUsageStatusBarWidget(private val project: Project) : CustomStatusBar
             .setRequestFocus(true)
             .setMovable(true)
             .setCancelOnClickOutside(true)
-            .setCancelButton(com.intellij.openapi.ui.popup.IconButton("Close", AllIcons.Actions.Close))
             .createPopup()
 
         popup.addListener(object : JBPopupListener {
@@ -317,7 +319,13 @@ class ClaudeUsageStatusBarWidget(private val project: Project) : CustomStatusBar
         service.addListener(serviceListener)
         timer.start()
 
-        if (userLocation != null) popup.showInScreenCoordinates(component, userLocation) else popup.showUnderneathOf(component)
+        // By default the popup's bottom edge sits on the widget's top edge, the way the built-in
+        // status bar popups open, so it does not cover the status bar.
+        if (userLocation != null) {
+            popup.showInScreenCoordinates(component, userLocation)
+        } else {
+            popup.show(RelativePoint(component, Point(0, -popup.content.preferredSize.height)))
+        }
         shownAt = popup.locationOnScreen
 
         // Metal workaround: force a repaint of the popup window once it is shown so the
@@ -400,11 +408,12 @@ class ClaudeUsageStatusBarWidget(private val project: Project) : CustomStatusBar
 
         row.add(headerPanel)
         row.add(Box.createVerticalStrut(4))
+        // The bar stretches to the full row width so its right end lines up with the percentage.
         row.add(JProgressBar(0, 100).apply {
             value = percentage
             isStringPainted = false
             preferredSize = Dimension(200, 8)
-            maximumSize = Dimension(200, 8)
+            maximumSize = Dimension(Int.MAX_VALUE, 8)
             alignmentX = Component.LEFT_ALIGNMENT
             foreground = getUsageColor(percentage)
         })

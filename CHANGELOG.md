@@ -1,5 +1,12 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+- Usage popup opens above the status bar widget, like the built-in status bar popups, instead of covering the status bar
+- Usage popup styled like the built-in status bar popups (e.g. line separator): the title and the body share the popup background, and the close button is gone — click outside or press Esc to close
+- Usage popup progress bars span the full row width, so each bar ends right under its percentage
+
 ## [0.3.3] - 2026-10-14
 
 ### Changed

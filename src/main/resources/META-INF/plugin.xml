@@ -31,6 +31,12 @@
     ]]></description>
 
     <change-notes><![CDATA[
+    <b>Unreleased</b>
+    <ul>
+        <li>Usage popup opens above the status bar widget, like the built-in status bar popups, instead of covering the status bar</li>
+        <li>Usage popup styled like the built-in status bar popups (e.g. line separator): the title and the body share the popup background, and the close button is gone (click outside or press Esc to close)</li>
+        <li>Usage popup progress bars span the full row width, so each bar ends right under its percentage</li>
+    </ul>
     <b>0.3.3</b>
     <ul>
         <li>First release of the fork as "Claude Subscription Usage" (plugin ID com.github.shiningpluto.claudeusage); uninstall the original "Claude Code Usage" plugin before installing, settings carry over</li>
