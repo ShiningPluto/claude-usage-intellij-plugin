@@ -14,10 +14,10 @@ object ClaudeCredentialsReader {
         data class Failure(val error: UsageErrorState) : Result()
     }
 
-    fun read(): Result {
-        val settings = ClaudeUsageSettings.getInstance().state
+    fun usesKeychain(): Boolean = SystemInfo.isMac && ClaudeUsageSettings.getInstance().state.useMacKeychain
 
-        if (SystemInfo.isMac && settings.useMacKeychain) {
+    fun read(): Result {
+        if (usesKeychain()) {
             val keychainResult = readFromKeychain()
             if (keychainResult is Result.Success) return keychainResult
 

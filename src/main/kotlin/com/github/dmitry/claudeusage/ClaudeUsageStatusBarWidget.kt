@@ -189,7 +189,9 @@ class ClaudeUsageStatusBarWidget(private val project: Project) : CustomStatusBar
         }
     }
 
-    private fun showDetailedPopup(component: Component) {
+    // userLocation: where the user dragged the popup before it was reopened; null shows it at the
+    // default place above the status bar widget.
+    private fun showDetailedPopup(component: Component, userLocation: Point? = null) {
         // Root paints an explicit opaque background: on the macOS Metal rendering pipeline a
         // popup whose content does not paint a solid background can show the uncleared GPU
         // surface as a fully black window (reported on WebStorm 2026.1 / macOS 26).
@@ -237,6 +239,7 @@ class ClaudeUsageStatusBarWidget(private val project: Project) : CustomStatusBar
         root.add(bottomPanel, BorderLayout.SOUTH)
 
         lateinit var popup: JBPopup
+        lateinit var shownAt: Point
 
         fun updateControls() {
             lastFetchLabel.text = service.getLastFetchTime()?.let {
@@ -272,11 +275,22 @@ class ClaudeUsageStatusBarWidget(private val project: Project) : CustomStatusBar
         val timer = Timer(1000) { updateControls() }
         timer.isRepeats = true
 
-        val serviceListener: () -> Unit = {
+        // The popup is placed when shown, right above the status bar; pack() can only grow it
+        // downwards and clips it at the screen bottom. So when rows are added or removed (e.g. an
+        // error message replaced by the usage rows) the popup is reopened to be laid out like a
+        // fresh one, and only same-height updates are applied in place. A popup the user dragged
+        // away reopens at the same spot, still fitted to the screen.
+        val serviceListener: () -> Unit = listener@{
+            if (popup.isDisposed) return@listener
             rebuildBody()
             updateControls()
-            if (!popup.isDisposed) {
-                SwingUtilities.invokeLater { popup.pack(true, true) }
+            if (root.preferredSize.height != root.height) {
+                val location = popup.locationOnScreen
+                val moved = userLocation != null || location != shownAt
+                popup.cancel()
+                showDetailedPopup(component, location.takeIf { moved })
+            } else {
+                SwingUtilities.invokeLater { if (!popup.isDisposed) popup.pack(true, true) }
             }
         }
 
@@ -303,7 +317,8 @@ class ClaudeUsageStatusBarWidget(private val project: Project) : CustomStatusBar
         service.addListener(serviceListener)
         timer.start()
 
-        popup.showUnderneathOf(component)
+        if (userLocation != null) popup.showInScreenCoordinates(component, userLocation) else popup.showUnderneathOf(component)
+        shownAt = popup.locationOnScreen
 
         // Metal workaround: force a repaint of the popup window once it is shown so the
         // GPU surface is actually painted instead of staying black on macOS Metal.

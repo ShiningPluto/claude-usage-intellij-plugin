@@ -51,6 +51,8 @@ class ClaudeUsageService : Disposable {
     private var currentBackoffSeconds = getRefreshIntervalSeconds()
     @Volatile
     private var usingProxy = false
+    @Volatile
+    private var rejectedToken: String? = null
 
     companion object {
         private const val USAGE_API_URL = "https://api.anthropic.com/api/oauth/usage"
@@ -58,6 +60,7 @@ class ClaudeUsageService : Disposable {
         private const val USER_AGENT = "claude-code/2.1.131"
         private const val MAX_BACKOFF_SECONDS = 3600L
         private const val MANUAL_REFRESH_COOLDOWN_SECONDS = 5L
+        private const val AUTH_RECHECK_SECONDS = 15L
         private const val NOTIFICATION_GROUP_ID = "Claude Code Usage"
 
         private fun getRefreshIntervalSeconds(): Long =
@@ -76,9 +79,31 @@ class ClaudeUsageService : Disposable {
     }
 
     private fun refreshAndReschedule() {
-        refreshUsage()
-        scheduleNext(currentBackoffSeconds)
+        try {
+            if (errorState.get() != UsageErrorState.AUTH_FAILED || hasNewToken() || backoffElapsed()) {
+                refreshUsage()
+            }
+        } catch (e: Exception) {
+            // An exception escaping the task would end the schedule chain and stop auto-refresh for good.
+            LOG.warn("Unexpected error refreshing Claude usage", e)
+        } finally {
+            scheduleNext(if (errorState.get() == UsageErrorState.AUTH_FAILED) authRecheckSeconds() else currentBackoffSeconds)
+        }
     }
+
+    // A 401 usually means the OAuth token expired. Claude Code CLI writes a fresh one whenever it
+    // runs, so while auth is failing the credentials are re-read often and fetched as soon as the
+    // token changes, instead of waiting out a backoff of up to an hour with the rejected token.
+    private fun hasNewToken(): Boolean {
+        val result = ClaudeCredentialsReader.read()
+        return result is ClaudeCredentialsReader.Result.Success && result.accessToken != rejectedToken
+    }
+
+    private fun backoffElapsed(): Boolean = (secondsSinceLastFetch() ?: Long.MAX_VALUE) >= currentBackoffSeconds
+
+    // Reading the keychain spawns `security`, so it is not polled more often than a regular refresh.
+    private fun authRecheckSeconds(): Long =
+        if (ClaudeCredentialsReader.usesKeychain()) getRefreshIntervalSeconds() else AUTH_RECHECK_SECONDS
 
     fun addListener(listener: () -> Unit) {
         synchronized(listeners) { listeners.add(listener) }
@@ -137,6 +162,7 @@ class ClaudeUsageService : Disposable {
             LOG.warn("Error fetching Claude usage: ${e.message}")
             setError(classifyFetchError(e))
         }
+        rejectedToken = accessToken.takeIf { errorState.get() == UsageErrorState.AUTH_FAILED }
 
         notifyListeners()
     }

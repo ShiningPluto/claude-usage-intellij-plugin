@@ -31,6 +31,9 @@
     <b>0.3.3</b>
     <ul>
         <li>7-day Fable quota: shown in the usage popup and selectable as the status bar quota ("7-day Fable")</li>
+        <li>Fixed usage staying on "auth err" for up to an hour after the OAuth token expired (typically right after starting the IDE): while authentication fails the credentials are re-read every 15 seconds and usage is fetched as soon as Claude Code CLI writes a new token</li>
+        <li>Fixed the usage popup showing only the first row after a refresh when it was opened while loading or in an error state: it is now reopened at full size (keeping the spot it was dragged to)</li>
+        <li>An unexpected error during a scheduled refresh no longer stops auto-refresh for the rest of the session</li>
     </ul>
     <b>0.3.2</b>
     <ul>

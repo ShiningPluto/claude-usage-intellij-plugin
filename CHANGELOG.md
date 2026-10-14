@@ -5,6 +5,11 @@
 ### Added
 - 7-day Fable quota — shown as a row in the usage popup and selectable as the status bar quota ("7-day Fable"). The usage API has no dedicated `seven_day_fable` field; the value is read from the `weekly_scoped` entry for the Fable model in the response's `limits[]` array, the same source the Claude Code CLI uses
 
+### Fixed
+- Usage stayed on "auth err" for up to an hour after the OAuth token expired (typically seen right after starting the IDE): HTTP 401 backed off exponentially and kept retrying with the rejected token. While authentication is failing the credentials are now re-read every 15 seconds (every refresh interval when using the macOS Keychain) and usage is fetched as soon as Claude Code CLI writes a new token
+- Usage popup opened while data was loading or in an error state showed only the first row after a refresh — the popup could not grow past the bottom of the screen; when rows are added or removed it is now reopened and laid out like a freshly opened one, keeping the spot it was dragged to
+- An unexpected exception during a scheduled refresh no longer stops auto-refresh for the rest of the session
+
 ## [0.3.2] - 2026-07-23
 
 ### Added
