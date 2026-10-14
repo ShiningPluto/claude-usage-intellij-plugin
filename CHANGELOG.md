@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.3.3] - 2026-10-12
+## [0.3.3] - 2026-10-14
 
 ### Changed
 - First release of this fork of [Claude Code Usage](https://github.com/dmitry/claude-usage-intellij-plugin), published as **Claude Usage Monitor** with plugin ID `com.github.shiningpluto.claudeusage`. Uninstall the original plugin before installing this one — both register the same status bar widget and settings. Settings are stored under the same name, so they carry over
