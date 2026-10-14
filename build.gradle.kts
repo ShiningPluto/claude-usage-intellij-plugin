@@ -38,6 +38,10 @@ intellijPlatform {
             untilBuild = provider { null }
         }
     }
+
+    publishing {
+        token = providers.environmentVariable("PUBLISH_TOKEN")
+    }
 }
 
 tasks {

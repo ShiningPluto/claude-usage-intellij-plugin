@@ -1,8 +1,8 @@
-# Claude Usage IntelliJ Plugin
-
-[![JetBrains Plugin](https://img.shields.io/jetbrains/plugin/v/29946-claude-code-usage.svg)](https://plugins.jetbrains.com/plugin/29946-claude-code-usage)
+# Claude Usage Monitor
 
 A simple IntelliJ plugin that displays your Claude subscription usage in the IDE status bar.
+
+> This is a fork of [Claude Code Usage](https://github.com/dmitry/claude-usage-intellij-plugin) by Dmitry Polushkin, published as **Claude Usage Monitor** (plugin ID `com.github.shiningpluto.claudeusage`). If you have the original plugin installed, uninstall it first — both register the same status bar widget and settings. Your settings carry over.
 
 > **Note:** This plugin shows Claude subscription usage limits only (5-hour, 7-day quotas). It does not track API token usage, costs, or conversation history.
 
@@ -102,10 +102,14 @@ This launches a sandboxed IntelliJ instance with the plugin installed.
 ### From JetBrains Marketplace (recommended)
 
 1. In your IDE: Settings → Plugins → Marketplace
-2. Search for "Claude Code Usage"
+2. Search for "Claude Usage Monitor"
 3. Click Install
 
-Or install directly: [JetBrains Marketplace](https://plugins.jetbrains.com/plugin/29946-claude-code-usage)
+### From GitHub Releases
+
+1. Download `claude-usage-intellij-plugin-x.x.x.zip` from [Releases](https://github.com/ShiningPluto/claude-usage-intellij-plugin/releases)
+2. In your IDE: Settings → Plugins → ⚙️ → Install Plugin from Disk
+3. Select the downloaded zip and restart the IDE
 
 ### From source
 
@@ -129,4 +133,4 @@ Contributions welcome! Please open an issue first to discuss proposed changes.
 
 ## License
 
-MIT
+MIT — originally by Dmitry Polushkin, see [LICENSE](LICENSE).
