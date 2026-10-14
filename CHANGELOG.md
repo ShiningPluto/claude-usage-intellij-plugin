@@ -3,7 +3,7 @@
 ## [0.3.3] - 2026-10-14
 
 ### Changed
-- First release of this fork of [Claude Code Usage](https://github.com/dmitry/claude-usage-intellij-plugin), published as **Claude Usage Monitor** with plugin ID `com.github.shiningpluto.claudeusage`. Uninstall the original plugin before installing this one — both register the same status bar widget and settings. Settings are stored under the same name, so they carry over
+- First release of this fork of [Claude Code Usage](https://github.com/dmitry/claude-usage-intellij-plugin), published as **Claude Subscription Usage** with plugin ID `com.github.shiningpluto.claudeusage`. Uninstall the original plugin before installing this one — both register the same status bar widget and settings. Settings are stored under the same name, so they carry over
 
 ### Added
 - 7-day Fable quota — shown as a row in the usage popup and selectable as the status bar quota ("7-day Fable"). The usage API has no dedicated `seven_day_fable` field; the value is read from the `weekly_scoped` entry for the Fable model in the response's `limits[]` array, the same source the Claude Code CLI uses

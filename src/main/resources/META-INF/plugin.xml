@@ -1,6 +1,6 @@
 <idea-plugin>
     <id>com.github.shiningpluto.claudeusage</id>
-    <name>Claude Usage Monitor</name>
+    <name>Claude Subscription Usage</name>
     <vendor url="https://github.com/ShiningPluto/claude-usage-intellij-plugin">ShiningPluto</vendor>
 
     <description><![CDATA[
@@ -33,7 +33,7 @@
     <change-notes><![CDATA[
     <b>0.3.3</b>
     <ul>
-        <li>First release of the fork as "Claude Usage Monitor" (plugin ID com.github.shiningpluto.claudeusage); uninstall the original "Claude Code Usage" plugin before installing, settings carry over</li>
+        <li>First release of the fork as "Claude Subscription Usage" (plugin ID com.github.shiningpluto.claudeusage); uninstall the original "Claude Code Usage" plugin before installing, settings carry over</li>
         <li>7-day Fable quota: shown in the usage popup and selectable as the status bar quota ("7-day Fable")</li>
         <li>Fixed usage staying on "auth err" for up to an hour after the OAuth token expired (typically right after starting the IDE): while authentication fails the credentials are re-read every 15 seconds and usage is fetched as soon as Claude Code CLI writes a new token</li>
         <li>Fixed the usage popup showing only the first row after a refresh when it was opened while loading or in an error state: it is now reopened at full size (keeping the spot it was dragged to)</li>
