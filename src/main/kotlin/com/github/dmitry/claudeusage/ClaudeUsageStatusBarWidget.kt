@@ -143,9 +143,11 @@ class ClaudeUsageStatusBarWidget(private val project: Project) : CustomStatusBar
             val percentage = service.getUsage()?.let { getSelectedQuota(it) }?.utilization?.toInt() ?: -1
             val fm = g2d.fontMetrics
             val text = getDisplayText()
-            val rectWidth = fm.stringWidth(text) + 10
+            // The bar fills the widget instead of hugging the text, so it keeps the same width
+            // when the text is short (e.g. just "0%" while the quota has no reset time yet).
+            val rectWidth = width - 6
             val rectHeight = fm.height + 4
-            val x = (width - rectWidth) / 2
+            val x = 3
             val y = (height - rectHeight) / 2
             val rect = RoundRectangle2D.Float(x.toFloat(), y.toFloat(), rectWidth.toFloat(), rectHeight.toFloat(), 6f, 6f)
 
@@ -155,7 +157,7 @@ class ClaudeUsageStatusBarWidget(private val project: Project) : CustomStatusBar
             if (percentage >= 0) {
                 g2d.color = getUsageColor(percentage)
                 g2d.clip = rect
-                g2d.fillRect(x, y, (rectWidth * percentage / 100f).coerceAtLeast(6f).toInt(), rectHeight)
+                g2d.fillRect(x, y, (rectWidth * percentage / 100f).coerceAtLeast(3f).toInt(), rectHeight)
                 g2d.clip = null
             } else if (service.getError() != UsageErrorState.NONE) {
                 g2d.color = COLOR_GRAY
@@ -163,7 +165,7 @@ class ClaudeUsageStatusBarWidget(private val project: Project) : CustomStatusBar
             }
 
             g2d.color = COLOR_TEXT
-            g2d.drawString(text, x + 5, y + fm.ascent + 2)
+            g2d.drawString(text, x + (rectWidth - fm.stringWidth(text)) / 2, y + fm.ascent + 2)
             g2d.dispose()
         }
 

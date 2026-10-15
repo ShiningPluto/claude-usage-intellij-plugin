@@ -7,6 +7,9 @@
 - Usage popup styled like the built-in status bar popups (e.g. line separator): the title and the body share the popup background, and the close button is gone — click outside or press Esc to close
 - Usage popup progress bars span the full row width, so each bar ends right under its percentage
 
+### Fixed
+- Status bar usage bar shrank to a small pill in the middle of the widget when its text was short (e.g. just "0%" while the 5-hour quota has no reset time yet); it now always fills the widget with the text centered
+
 ## [0.3.3] - 2026-10-14
 
 ### Changed
