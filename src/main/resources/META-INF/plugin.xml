@@ -31,7 +31,7 @@
     ]]></description>
 
     <change-notes><![CDATA[
-    <b>Unreleased</b>
+    <b>0.3.4</b>
     <ul>
         <li>Usage popup opens above the status bar widget, like the built-in status bar popups, instead of covering the status bar</li>
         <li>Usage popup styled like the built-in status bar popups (e.g. line separator): the title and the body share the popup background, and the close button is gone (click outside or press Esc to close)</li>

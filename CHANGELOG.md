@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [0.3.4] - 2026-10-15
 
 ### Changed
 - Usage popup opens above the status bar widget, like the built-in status bar popups, instead of covering the status bar
