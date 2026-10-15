@@ -1,5 +1,8 @@
 # Claude Subscription Usage
 
+[![JetBrains Marketplace](https://img.shields.io/jetbrains/plugin/v/35090?label=JetBrains%20Marketplace)](https://plugins.jetbrains.com/plugin/35090-claude-subscription-usage)
+[![Downloads](https://img.shields.io/jetbrains/plugin/d/35090)](https://plugins.jetbrains.com/plugin/35090-claude-subscription-usage)
+
 A simple IntelliJ plugin that displays your Claude subscription usage in the IDE status bar.
 
 > This is a fork of [Claude Code Usage](https://github.com/dmitry/claude-usage-intellij-plugin) by Dmitry Polushkin, published as **Claude Subscription Usage** (plugin ID `com.github.shiningpluto.claudeusage`). If you have the original plugin installed, uninstall it first — both register the same status bar widget and settings. Your settings carry over.
@@ -100,6 +103,8 @@ This launches a sandboxed IntelliJ instance with the plugin installed.
 ## Installation
 
 ### From JetBrains Marketplace (recommended)
+
+Install it from the [plugin page](https://plugins.jetbrains.com/plugin/35090-claude-subscription-usage), or:
 
 1. In your IDE: Settings → Plugins → Marketplace
 2. Search for "Claude Subscription Usage"
