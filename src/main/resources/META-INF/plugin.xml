@@ -31,6 +31,10 @@
     ]]></description>
 
     <change-notes><![CDATA[
+    <b>Unreleased</b>
+    <ul>
+        <li>Plugin icon (a usage gauge), shown in Settings → Plugins and on JetBrains Marketplace, with a dark theme variant</li>
+    </ul>
     <b>0.3.4</b>
     <ul>
         <li>Usage popup opens above the status bar widget, like the built-in status bar popups, instead of covering the status bar</li>

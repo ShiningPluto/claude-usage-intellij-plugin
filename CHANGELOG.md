@@ -1,5 +1,10 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+- Plugin icon (a usage gauge), shown in Settings → Plugins and on JetBrains Marketplace, with a dark theme variant
+
 ## [0.3.4] - 2026-10-15
 
 ### Changed
