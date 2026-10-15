@@ -9,6 +9,7 @@
 
 ### Fixed
 - Status bar usage bar shrank to a small pill in the middle of the widget when its text was short (e.g. just "0%" while the 5-hour quota has no reset time yet); it now always fills the widget with the text centered
+- Status bar widget was not placed after the caret position widget: its ordering referred to a non-existent widget ID (`positionWidget` instead of `Position`)
 
 ## [0.3.3] - 2026-10-14
 

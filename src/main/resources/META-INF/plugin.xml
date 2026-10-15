@@ -37,6 +37,7 @@
         <li>Usage popup styled like the built-in status bar popups (e.g. line separator): the title and the body share the popup background, and the close button is gone (click outside or press Esc to close)</li>
         <li>Usage popup progress bars span the full row width, so each bar ends right under its percentage</li>
         <li>Fixed the status bar usage bar shrinking to a small pill when its text is short (e.g. just "0%" while the 5-hour quota has no reset time yet): it now always fills the widget with the text centered</li>
+        <li>Fixed the status bar widget not being placed after the caret position widget: its ordering referred to a non-existent widget ID ("positionWidget" instead of "Position")</li>
     </ul>
     <b>0.3.3</b>
     <ul>
@@ -106,7 +107,7 @@
         <statusBarWidgetFactory
                 id="ClaudeUsageWidget"
                 implementation="com.github.dmitry.claudeusage.ClaudeUsageStatusBarWidgetFactory"
-                order="after positionWidget"/>
+                order="after Position"/>
 
         <applicationConfigurable
                 parentId="tools"
